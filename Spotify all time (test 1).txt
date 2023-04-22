@@ -1,0 +1,54 @@
+import com.wrapper.spotify.SpotifyApi;
+import com.wrapper.spotify.exceptions.SpotifyWebApiException;
+import com.wrapper.spotify.model_objects.specification.Paging;
+import com.wrapper.spotify.model_objects.specification.Track;
+import com.wrapper.spotify.requests.authorization.client_credentials.ClientCredentialsRequest;
+import com.wrapper.spotify.requests.data.personalization.simplified.GetUsersTopTracksRequest;
+
+import java.io.IOException;
+
+public class SpotifyTopTracks {
+
+    public static void main(String[] args) {
+        // Set up the Spotify API client
+        String clientId = "02d8b038af3b48c8a436e4588397236a";
+        String clientSecret = "ca3b8d45a4bf43519459899bfca8b2da";
+        SpotifyApi spotifyApi = new SpotifyApi.Builder()
+                .setClientId(clientId)
+                .setClientSecret(clientSecret)
+                .build();
+
+        // Authenticate with the API using the Client Credentials Flow
+        try {
+            ClientCredentialsRequest clientCredentialsRequest = spotifyApi.clientCredentials().build();
+            String accessToken = clientCredentialsRequest.execute().getAccessToken();
+            spotifyApi.setAccessToken(accessToken);
+        } catch (IOException | SpotifyWebApiException e) {
+            System.out.println("Error authenticating with Spotify API: " + e.getMessage());
+            return;
+        }
+
+        // Retrieve the user's top tracks from all time
+        try {
+            GetUsersTopTracksRequest getUsersTopTracksRequest = spotifyApi.getUsersTopTracks()
+                    .time_range("long_term")
+                    .limit(50) // Change this to the number of tracks you want to retrieve
+                    .offset(0)
+                    .build();
+            Paging<Track> paging = getUsersTopTracksRequest.execute();
+            Track[] tracks = paging.getItems();
+
+            // Print the top tracks to the console
+            for (int i = 0; i < tracks.length; i++) {
+                Track track = tracks[i];
+                String name = track.getName();
+                String artist = track.getArtists()[0].getName();
+                String album = track.getAlbum().getName();
+                System.out.println((i + 1) + ". " + name + " by " + artist + " from the album " + album);
+            }
+        } catch (IOException | SpotifyWebApiException e) {
+            System.out.println("Error retrieving top tracks: " + e.getMessage());
+            return;
+        }
+    }
+}
